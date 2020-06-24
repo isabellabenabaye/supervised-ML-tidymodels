@@ -1,0 +1,93 @@
+---
+title: 'Chapter 1: Not mtcars AGAIN'
+author: "Isabella Benabaye"
+date: "6/23/2020"
+output: html_document
+---
+```{r imports}
+library(tidyverse)
+library(tidymodels)
+library(extrafont)
+loadfonts(device = "win", quiet = TRUE) ## to load the font
+```
+
+# Chapter 1
+## Visualize the fuel efficiency distribution
+Exploring the data
+```{r visualize fuel efficiency}
+cars2018 <- read_csv("https://raw.githubusercontent.com/juliasilge/supervised-ML-case-studies-course/master/data/cars2018.csv") %>% 
+  janitor::clean_names()  ## clean the variable names
+
+glimpse(cars2018)
+
+ggplot(cars2018, aes(mpg)) +
+  geom_histogram(bins = 25) +
+  labs(x = "Fuel efficiency (mpg)",
+       y = "Number of cars") +
+  hrbrthemes::theme_ipsum(base_family = "IBM Plex Sans")
+```
+
+## Build a simple linear model
+Build the simplest model to get an idea of what's going on. In this case we can fit a simple linear model using base R's `lm()` function.
+
+Remove the two columns `Model` and `Model Index` since they tell us individual identifiers for each car that won't be used for modeling.
+```{r simple model}
+car_vars <- cars2018 %>% 
+  select(-model, -model_index)
+```
+
+Fit `MPG` as the predicted quantity, explained by all other predictors.
+```{r lm - fit all}
+fit_all <- lm(mpg ~ ., data = car_vars)
+```
+
+Print the summary of the model.
+```{r lm - summary}
+summary(fit_all)
+```
+
+## Getting training and testing data with `rsample`
+
+**Balanced sets:** 
+80% for training, with cases chosen so that both sets are balanced in `Aspiration` types
+```{r split data}
+car_split <- car_vars %>% 
+  initial_split(prop = 0.8,
+                strata = aspiration)
+
+car_train <- training(car_split)
+car_test <- testing(car_split)
+```
+
+## Training a model
+Three concepts in specifying a model: 
+Model type - differentiates models such as logistic regression, decision tree models, and so forth
+Model mode - includes common options like regression and classification; some model types support either of these while some only have one mode
+Model engine - the computational tool which will be used to fit the model
+
+After a model has been specified, it can be fit, typically using a symbolic description of the model (a formula) and some data. We're going to start fitting models with data = car_train, as shown here. This means we're saying, "Just fit the model one time, on the whole training set". Once you have fit your model, you can evaluate how well the model is performing.
+
+Linear regression model specification
+```{r tidy - lm spec}
+lin_mod  <- linear_reg() %>% 
+  set_engine("lm")
+
+# Fit the model with a log transformed y
+lin_fit <- lm_mod %>% 
+  fit(log(mpg) ~ .,
+      data = car_train)
+```
+
+Random forest model specification
+```{r tidy - random forest spec}
+rf_mod <- rand_forest() %>% 
+  set_mode("regression") %>% 
+  set_engine("randomForest")
+
+fit_rf <- rf_mod %>% 
+  fit(log(mpg) ~ .,
+      data = car_train)
+```
+
+## Evaluating a model
+We will use the package {yardstick} to give us metrics to measure how well our models are doing.
