@@ -126,9 +126,30 @@ metrics(results, truth = mpg, estimate = .pred_rf)
 ## Bootstrap resampling with tidymodels
 Resampling can help us evaluate our machine learning models more accurately.
 
-There are functions such as bootstraps() and similar for other types of resampling. The default behavior is to do 25 bootstrap resamplings, but you can change this if you want to. The column splits is of type list. Instead of containing numbers or characters, this column contains lists. Each split in that column keeps track of which of the original data points are in the analysis set for that resample.
-```{r bootstrap resamples}
+There are functions such as `bootstraps()` and similar for other types of resampling. The default behavior is to do 25 bootstrap resamplings, but you can change this if you want to. The column splits is of type list. Instead of containing numbers or characters, this column contains lists. Each split in that column keeps track of which of the original data points are in the analysis set for that 
 
+**Create bootstrap samples**
+```{r bootstrap resamples}
+car_boot <- bootstraps(car_train)
+```
+
+**Evaluate the models with bootstrap resampling**
+```{r}
+lm_res <- lm_mod %>% 
+  fit_resamples(
+    log(mpg) ~ .,
+    resamples = car_boot,
+    control = control_resamples(save_pred = TRUE)
+  )
+
+rf_res <- rf_mod %>% 
+  fit_resamples(
+    log(mpg) ~ .,
+    resamples = car_boot,
+    control = control_resamples(save_pred = TRUE)
+  )
+
+glimpse(rf_res)
 ```
 
 
@@ -136,12 +157,15 @@ Once you have created a set of resamples, you can use the function fit_resamples
 
 The code on this slide shows how to fit our model specification lm_mod to the 25 bootstrap resamples in car_boot. This will fit our regression model 25 times, each time to a different bootstrapped version of the training data. We also determine how well our regression model performed 25 times, each time on the smaller subset of training data set aside when fitting. The fitted models themselves are just thrown away and not stored in the output, because they are only used for computing performance metrics.
 
-We will not save the fitted models but we are going to save our predictions in fit_resamples() using save_pred = TRUE. This is so we can be especially clear about what it is that we are comparing during this process.
+We will not save the fitted models but we are going to save our predictions in `fit_resamples()` using save_pred = TRUE. This is so we can be especially clear about what it is that we are comparing during this process.
 
 Each car has a real fuel efficiency as reported by the Department of Energy and then we have built models that predict fuel efficiency for each car. When we evaluate a model, we are calculating how far apart each predicted value is from each real value.
+
+## Look at the predictions
 
 ## Visualizing model predictions
 
 The x-axis has the actual fuel efficiency and the y-axis has the predicted fuel efficiency for each kind of model.
 
 The difference between linear regression and random forest isn't huge here, but in this case, we can see visually that the random forest model is performing better. The slope for the random forest model is closer to the dotted line (the slope = 1 line) and the spread around the line is smaller for the random forest model.
+
