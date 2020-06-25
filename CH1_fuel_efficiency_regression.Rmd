@@ -47,19 +47,26 @@ summary(fit_all)
 ```
 
 ## Getting training and testing data with `rsample`
+Creating training/testing splits reduces overfitting. When you evaluate your model on data that it was not trained on, you get a better estimate of how it will perform on new data.
 
 **Balanced sets:** 
-80% for training, with cases chosen so that both sets are balanced in `Aspiration` types
+80% for training, with cases chosen so that both sets are balanced in `Transmission` types
 ```{r split data}
+set.seed(1234)
 car_split <- car_vars %>% 
   initial_split(prop = 0.8,
-                strata = aspiration)
+                strata = transmission)
 
 car_train <- training(car_split)
 car_test <- testing(car_split)
+
+glimpse(car_train)
+glimpse(car_test)
 ```
 
-## Training a model
+## Training a model (no resampling)
+When we model data, we deal with model type (such as linear regression or random forest), mode (regression or classification), and model engine (how the models are actually fit). In tidymodels, we capture that modeling information in a model specification, so setting up your model specification can be a good place to start. 
+
 Three concepts in specifying a model: 
 Model type - differentiates models such as logistic regression, decision tree models, and so forth
 Model mode - includes common options like regression and classification; some model types support either of these while some only have one mode
@@ -67,18 +74,22 @@ Model engine - the computational tool which will be used to fit the model
 
 After a model has been specified, it can be fit, typically using a symbolic description of the model (a formula) and some data. We're going to start fitting models with data = car_train, as shown here. This means we're saying, "Just fit the model one time, on the whole training set". Once you have fit your model, you can evaluate how well the model is performing.
 
-Linear regression model specification
+We'll fit the `log(MPG)` since the fuel efficiency has a log normal distribution.
+
+**Linear regression model specification**
 ```{r tidy - lm spec}
-lin_mod  <- linear_reg() %>% 
+lm_mod  <- linear_reg() %>% 
   set_engine("lm")
 
 # Fit the model with a log transformed y
-lin_fit <- lm_mod %>% 
+fit_lm <- lm_mod %>% 
   fit(log(mpg) ~ .,
       data = car_train)
+
+fit_lm
 ```
 
-Random forest model specification
+**Random forest model specification**
 ```{r tidy - random forest spec}
 rf_mod <- rand_forest() %>% 
   set_mode("regression") %>% 
@@ -87,7 +98,50 @@ rf_mod <- rand_forest() %>%
 fit_rf <- rf_mod %>% 
   fit(log(mpg) ~ .,
       data = car_train)
+
+fit_rf
 ```
 
-## Evaluating a model
+## Evaluating model performance
 We will use the package {yardstick} to give us metrics to measure how well our models are doing.
+
+For regression models, we will focus on evaluating using the root mean squared error metric. This quantity is measured in the same units as the original data (log of miles per gallon, in our case). Lower values indicate a better fit to the data. It’s not too hard to calculate root mean squared error manually, but the yardstick package offers convenient functions for this and many other model performance metrics.
+
+Create new columns for model predictions of the test data from each of the models we have trained.
+```{r evaluating model performance 1}
+results <- car_test %>% 
+  mutate(mpg = log(mpg)) %>% 
+  bind_cols(predict(fit_lm, car_test) %>% 
+              rename(.pred_lm = .pred)) %>% 
+  bind_cols(predict(fit_rf, car_test) %>% 
+              rename(.pred_rf = .pred))
+```
+
+Evaluate the performance of the predictions using `metrics()` by specifying the column that contains the real fuel efficiency.
+```{r evaluating model performance 2}
+metrics(results, truth = mpg, estimate = .pred_lm)
+metrics(results, truth = mpg, estimate = .pred_rf)
+```
+
+## Bootstrap resampling with tidymodels
+Resampling can help us evaluate our machine learning models more accurately.
+
+There are functions such as bootstraps() and similar for other types of resampling. The default behavior is to do 25 bootstrap resamplings, but you can change this if you want to. The column splits is of type list. Instead of containing numbers or characters, this column contains lists. Each split in that column keeps track of which of the original data points are in the analysis set for that resample.
+```{r bootstrap resamples}
+
+```
+
+
+Once you have created a set of resamples, you can use the function fit_resamples() to fit a model to each resample and compute performance metrics for each.
+
+The code on this slide shows how to fit our model specification lm_mod to the 25 bootstrap resamples in car_boot. This will fit our regression model 25 times, each time to a different bootstrapped version of the training data. We also determine how well our regression model performed 25 times, each time on the smaller subset of training data set aside when fitting. The fitted models themselves are just thrown away and not stored in the output, because they are only used for computing performance metrics.
+
+We will not save the fitted models but we are going to save our predictions in fit_resamples() using save_pred = TRUE. This is so we can be especially clear about what it is that we are comparing during this process.
+
+Each car has a real fuel efficiency as reported by the Department of Energy and then we have built models that predict fuel efficiency for each car. When we evaluate a model, we are calculating how far apart each predicted value is from each real value.
+
+## Visualizing model predictions
+
+The x-axis has the actual fuel efficiency and the y-axis has the predicted fuel efficiency for each kind of model.
+
+The difference between linear regression and random forest isn't huge here, but in this case, we can see visually that the random forest model is performing better. The slope for the random forest model is closer to the dotted line (the slope = 1 line) and the spread around the line is smaller for the random forest model.
