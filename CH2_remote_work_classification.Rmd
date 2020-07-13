@@ -1,0 +1,37 @@
+---
+title: 'Chapter 2: Stack Overflow  Developer Survey'
+author: "Isabella Benabaye"
+date: "7/3/2020"
+output: html_document
+---
+```{r imports}
+library(tidyverse)
+library(tidymodels)
+library(extrafont)
+loadfonts(device = "win", quiet = TRUE) ## to load the font
+```
+
+# Import data
+```{r}
+stack_overflow <- read_csv("https://raw.githubusercontent.com/juliasilge/supervised-ML-case-studies-course/master/data/stack_overflow.csv")
+```
+
+# Explore the Stack Overflow survey
+```{r}
+glimpse(stack_overflow)
+
+stack_overflow %>% 
+  count(remote, sort = TRUE)
+
+stack_overflow %>% 
+  count(country, sort = TRUE)
+```
+
+Remote: there are way more people who don't work remotely than those that do. The dataset is imbalanced.
+
+Country: Most of the respondents are from the U.S. (~50%), then the U.K. (18%). The rest of the 32% of the respondents are from Germanu, India, and Canada.
+
+```{r}
+
+```
+
