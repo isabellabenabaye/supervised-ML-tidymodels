@@ -7,8 +7,11 @@ output: html_document
 ```{r imports}
 library(tidyverse)
 library(tidymodels)
+library(hrbrthemes)
 library(extrafont)
 loadfonts(device = "win", quiet = TRUE) ## to load the font
+theme_set(theme_ipsum(base_family = "IBM Plex Sans", base_size = 13, axis_title_size = 14))
+  
 ```
 
 # Import data
@@ -20,18 +23,23 @@ stack_overflow <- read_csv("https://raw.githubusercontent.com/juliasilge/supervi
 ```{r}
 glimpse(stack_overflow)
 
+# Count for 'remote'
 stack_overflow %>% 
   count(remote, sort = TRUE)
 
+# Count for 'country'
 stack_overflow %>% 
   count(country, sort = TRUE)
 ```
 
 Remote: there are way more people who don't work remotely than those that do. The dataset is imbalanced.
 
-Country: Most of the respondents are from the U.S. (~50%), then the U.K. (18%). The rest of the 32% of the respondents are from Germanu, India, and Canada.
+Country: Most of the respondents are from the U.S. (~50%), then the U.K. (18%). The rest of the 32% of the respondents are from Germany, India, and Canada.
 
 ```{r}
-
+stack_overflow %>% 
+  ggplot(aes(remote, years_coded_job)) +
+  geom_boxplot() +
+  labs(x = NULL, y = "Years of professional coding experience")
 ```
 
