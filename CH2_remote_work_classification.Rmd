@@ -43,3 +43,5 @@ stack_overflow %>%
   labs(x = NULL, y = "Years of professional coding experience")
 ```
 
+Those that work remotely have more varied years of experience and a higher median, while those that don't work remotely are more centered at those who have less years of experience. Both groups have the same range though, from those who have 0 to 20 years of experience.
+
