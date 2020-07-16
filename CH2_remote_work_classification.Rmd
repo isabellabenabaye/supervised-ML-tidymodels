@@ -45,3 +45,26 @@ stack_overflow %>%
 
 Those that work remotely have more varied years of experience and a higher median, while those that don't work remotely are more centered at those who have less years of experience. Both groups have the same range though, from those who have 0 to 20 years of experience.
 
+# Training and testing data
+Splitting the data into training and testing sets to reduce overfitting and obtain a more accurate estimate for how the model will perform on new data.
+
+Split the data into 80%/20% sections and evenly divide the training and testing data between the two classes of `remote`.
+
+```{r}
+# Remove the identifier column
+stack_select <- stack_overflow %>% 
+  select(-respondent)
+
+# Split the data
+set.seed(1234)
+stack_split <- stack_select %>% 
+  initial_split(prop = .8, strata = remote)
+
+stack_train <- training(stack_split)
+stack_test <- testing(stack_split)
+
+glimpse(stack_train)
+glimpse(stack_test)
+```
+
+# Dealing with imbalanced data
