@@ -67,4 +67,26 @@ glimpse(stack_train)
 glimpse(stack_test)
 ```
 
-# Dealing with imbalanced data
+# Preprocess the training data with a recipe
+For this case study, the preprocessing method we will use is **downsampling**.
+
+First, we'll create and define the recipe:
+```{r}
+stack_recipe <- recipe(remote ~ ., data = stack_train) %>% 
+  step_downsample(remote)
+  
+stack_recipe
+```
+
+Now we'll estimate the parameters required to preprocess the data (`prep()`) then extract the preprocessed data (`juice()`). This step isn't necessary since you use a `workflow()`for modeling, but it's helpful to diagnose problems and explore the preprocessing results.
+
+```{r}
+# Estimate the parameters required to preprocess the data
+stack_prep <- prep(stack_recipe)
+# Extract the processed data
+stack_down <- juice(stack_prep)
+
+stack_down %>% 
+  count(remote)
+```
+
