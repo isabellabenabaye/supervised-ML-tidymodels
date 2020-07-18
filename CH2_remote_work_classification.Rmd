@@ -90,3 +90,49 @@ stack_down %>%
   count(remote)
 ```
 
+# Predict `remote` status - train the model
+Build a `workflow()` - You may find this a convenient way to write your modeling code when you want to fit with the same preprocessor but different model specifications.
+
+## Logistic regression model
+
+Build a logistic regression model:
+```{r}
+glm_spec <- logistic_reg() %>% 
+  set_engine("glm")
+```
+
+Start a workflow containing only the recipe:
+```{r}
+stack_wf <- workflow() %>% 
+  add_recipe(stack_recipe)
+```
+
+Add the model and fit the workflow:
+```{r}
+stack_glm <- stack_wf %>% 
+  add_model(glm_spec) %>% 
+  fit(data = stack_train)
+
+# Print the fitted model
+stack_glm
+```
+
+## Decision tree model
+
+Build a decision tree model:
+```{r}
+tree_spec <- decision_tree() %>% 
+  set_engine("rpart") %>% 
+  set_mode("classification")
+```
+
+Add the model to the workflow and fit:
+```{r}
+stack_tree <- stack_wf %>% 
+  add_model(tree_spec) %>% 
+  fit(data = stack_train)
+
+# Print the fitted model
+stack_tree
+```
+
